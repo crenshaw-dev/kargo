@@ -14,14 +14,14 @@ import (
 	v1alpha1 "github.com/akuity/kargo/pkg/api/service/v1alpha1"
 )
 
-func newProjectCommand(opt *option.Option) *cobra.Command {
+func newWarehouseCommand(opt *option.Option) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "project [NAME]...",
-		Short: "Delete project by name",
+		Use:   "warehouse [NAME]...",
+		Short: "Delete warehouse by name",
 		Args:  option.MinimumNArgs(1),
 		Example: `
-# Delete project
-kargo delete project my-project
+# Delete warehouse
+kargo delete warehouse --project=my-project my-warehouse
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -30,15 +30,26 @@ kargo delete project my-project
 				return errors.New("get client from config")
 			}
 
+			project := opt.Project.OrElse("")
+			if project == "" {
+				return errors.New("project is required")
+			}
+
 			var resErr error
 			for _, name := range slices.Compact(args) {
-				if _, err := kargoSvcCli.DeleteProject(ctx, connect.NewRequest(&v1alpha1.DeleteProjectRequest{
-					Name: name,
-				})); err != nil {
+				if _, err := kargoSvcCli.DeleteWarehouse(
+					ctx,
+					connect.NewRequest(
+						&v1alpha1.DeleteWarehouseRequest{
+							Project: project,
+							Name:    name,
+						},
+					),
+				); err != nil {
 					resErr = goerrors.Join(resErr, errors.Wrap(err, "Error"))
 					continue
 				}
-				_, _ = fmt.Fprintf(opt.IOStreams.Out, "Project Deleted: %q\n", name)
+				_, _ = fmt.Fprintf(opt.IOStreams.Out, "Warehouse Deleted: %q\n", name)
 			}
 			return resErr
 		},
